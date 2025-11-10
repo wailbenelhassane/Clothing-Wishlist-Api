@@ -1,0 +1,47 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "ECR Repository para la app de clothing (wishlist de prendas de ropa)"
+
+Parameters:
+  RepositoryName:
+    Type: String
+    Default: clothing-app
+    Description: Nombre del repositorio ECR para las imágenes Docker de la aplicación clothing-app
+
+Resources:
+  ClothingECRRepository:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: !Ref RepositoryName
+      ImageScanningConfiguration:
+        ScanOnPush: false
+      LifecyclePolicy:
+        LifecyclePolicyText: |
+          {
+            "rules": [
+              {
+                "rulePriority": 1,
+                "description": "Mantener solo las últimas 2 imágenes del repositorio",
+                "selection": {
+                  "tagStatus": "any",
+                  "countType": "imageCountMoreThan",
+                  "countNumber": 2
+                },
+                "action": {
+                  "type": "expire"
+                }
+              }
+            ]
+          }
+
+Outputs:
+  RepositoryUri:
+    Description: URI del repositorio ECR
+    Value: !GetAtt ClothingECRRepository.RepositoryUri
+
+  RepositoryName:
+    Description: Nombre del repositorio ECR
+    Value: !Ref RepositoryName
+
+  RepositoryArn:
+    Description: ARN del repositorio ECR
+    Value: !GetAtt ClothingECRRepository.Arn

@@ -1,0 +1,43 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "DynamoDB table para la app de clothing con GSI en 'name' (compatible con el repo)"
+
+Parameters:
+  TableName:
+    Type: String
+    Default: clothing_items
+    Description: DynamoDB table name para la wishlist de prendas
+
+Resources:
+  ClothingTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Ref TableName
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+        - AttributeName: name
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      BillingMode: PAY_PER_REQUEST
+      GlobalSecondaryIndexes:
+        - IndexName: name-index
+          KeySchema:
+            - AttributeName: name
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+
+Outputs:
+  TableName:
+    Description: DynamoDB table name
+    Value: !Ref ClothingTable
+
+  TableArn:
+    Description: ARN de la tabla DynamoDB
+    Value: !GetAtt ClothingTable.Arn
+
+  NameIndexName:
+    Description: Name of the GSI for name
+    Value: name-index

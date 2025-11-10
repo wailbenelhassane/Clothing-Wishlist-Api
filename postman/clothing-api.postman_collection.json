@@ -1,0 +1,135 @@
+{
+  "info": {
+    "name": "Clothing API",
+    "description": "Colección Postman para probar los endpoints de la API de Clothing (wishlist). Incluye variables para `baseUrl`, `apiKey` (opcional) y reutiliza `clothingId` tras crear un ítem.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_postman_id": "9c1a4f7f-4f1c-4d47-9f2b-7e6e1c2f9a11"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080", "type": "string" },
+    { "key": "apiKey", "value": "", "type": "string" },
+    { "key": "clothingId", "value": "", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/health",
+          "host": ["{{baseUrl}}"],
+          "path": ["health"]
+        }
+      }
+    },
+    {
+      "name": "Clothing",
+      "item": [
+        {
+          "name": "List Clothing",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "x-api-key", "value": "{{apiKey}}", "type": "text", "disabled": true }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/clothing",
+              "host": ["{{baseUrl}}"],
+              "path": ["clothing"],
+              "query": [
+                { "key": "page", "value": "" },
+                { "key": "limit", "value": "" },
+                { "key": "brand", "value": "" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Clothing",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 201 Created', function () { pm.response.to.have.status(201); });",
+                  "try {",
+                  "  var json = pm.response.json();",
+                  "  if (json && json.data && json.data.id) {",
+                  "    pm.collectionVariables.set('clothingId', json.data.id);",
+                  "  }",
+                  "} catch (e) {}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-api-key", "value": "{{apiKey}}", "type": "text", "disabled": true }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Chaqueta de cuero\",\n  \"brand\": \"Zara\",\n  \"size\": \"M\",\n  \"color\": \"Negro\",\n  \"price\": 79.99,\n  \"wishlist\": true,\n  \"notes\": \"Disponible en tienda online\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/clothing",
+              "host": ["{{baseUrl}}"],
+              "path": ["clothing"]
+            }
+          }
+        },
+        {
+          "name": "Get Clothing By ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "x-api-key", "value": "{{apiKey}}", "type": "text", "disabled": true }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/clothing/{{clothingId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["clothing", "{{clothingId}}"]
+            }
+          }
+        },
+        {
+          "name": "Update Clothing",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-api-key", "value": "{{apiKey}}", "type": "text", "disabled": true }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"price\": 69.99,\n  \"wishlist\": false,\n  \"notes\": \"Rebajada\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/clothing/{{clothingId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["clothing", "{{clothingId}}"]
+            }
+          }
+        },
+        {
+          "name": "Delete Clothing",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "x-api-key", "value": "{{apiKey}}", "type": "text", "disabled": true }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/clothing/{{clothingId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["clothing", "{{clothingId}}"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
+

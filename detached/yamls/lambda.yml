@@ -1,0 +1,582 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "Lambda-based Clothing Wishlist API using ECR image and API Gateway."
+
+Resources:
+  # =====================================================
+  # 🧥 CLOTHING LAMBDAS
+  # =====================================================
+  GetClothingLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: get-clothing-lambda
+      PackageType: Image
+      Code:
+        ImageUri: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/clothing-service:latest"
+      Role: !Sub "arn:aws:iam::${AWS::AccountId}:role/LabRole"
+      Timeout: 30
+      MemorySize: 256
+      Architectures: [x86_64]
+      Environment:
+        Variables:
+          HANDLER_NAME: get
+
+  ListClothingLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: list-clothing-lambda
+      PackageType: Image
+      Code:
+        ImageUri: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/clothing-service:latest"
+      Role: !Sub "arn:aws:iam::${AWS::AccountId}:role/LabRole"
+      Timeout: 30
+      MemorySize: 256
+      Architectures: [x86_64]
+      Environment:
+        Variables:
+          HANDLER_NAME: list
+
+  PostClothingLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: post-clothing-lambda
+      PackageType: Image
+      Code:
+        ImageUri: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/clothing-service:latest"
+      Role: !Sub "arn:aws:iam::${AWS::AccountId}:role/LabRole"
+      Timeout: 30
+      MemorySize: 256
+      Architectures: [x86_64]
+      Environment:
+        Variables:
+          HANDLER_NAME: create
+
+  DeleteClothingLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: delete-clothing-lambda
+      PackageType: Image
+      Code:
+        ImageUri: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/clothing-service:latest"
+      Role: !Sub "arn:aws:iam::${AWS::AccountId}:role/LabRole"
+      Timeout: 30
+      MemorySize: 256
+      Architectures: [x86_64]
+      Environment:
+        Variables:
+          HANDLER_NAME: delete
+
+  PutClothingLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: put-clothing-lambda
+      PackageType: Image
+      Code:
+        ImageUri: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/clothing-service:latest"
+      Role: !Sub "arn:aws:iam::${AWS::AccountId}:role/LabRole"
+      Timeout: 30
+      MemorySize: 256
+      Architectures: [x86_64]
+      Environment:
+        Variables:
+          HANDLER_NAME: update
+
+  # =====================================================
+  # 🧾 LOG GROUPS
+  # =====================================================
+  GetClothingLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${GetClothingLambda}"
+      RetentionInDays: 7
+
+  ListClothingLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${ListClothingLambda}"
+      RetentionInDays: 7
+
+  PostClothingLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${PostClothingLambda}"
+      RetentionInDays: 7
+
+  DeleteClothingLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${DeleteClothingLambda}"
+      RetentionInDays: 7
+
+  PutClothingLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${PutClothingLambda}"
+      RetentionInDays: 7
+
+  # =====================================================
+  # 🌐 API GATEWAY
+  # =====================================================
+  ClothingRestAPI:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: ClothingAPI
+      Description: API Gateway for Clothing Wishlist Service
+      EndpointConfiguration:
+        Types: [REGIONAL]
+
+  # API Key + Usage Plan
+  ClothingApiKey:
+    Type: AWS::ApiGateway::ApiKey
+    DependsOn: ClothingAPIDeployment
+    Properties:
+      Name: ClothingAPIKey
+      Description: API Key for Clothing API
+      Enabled: true
+      StageKeys:
+        - RestApiId: !Ref ClothingRestAPI
+          StageName: prod
+
+  ClothingUsagePlan:
+    Type: AWS::ApiGateway::UsagePlan
+    DependsOn: ClothingAPIDeployment
+    Properties:
+      UsagePlanName: ClothingUsagePlan
+      Description: Usage plan for Clothing API
+      ApiStages:
+        - ApiId: !Ref ClothingRestAPI
+          Stage: prod
+      Throttle:
+        RateLimit: 100
+        BurstLimit: 200
+
+  ClothingUsagePlanKey:
+    Type: AWS::ApiGateway::UsagePlanKey
+    Properties:
+      KeyId: !Ref ClothingApiKey
+      KeyType: API_KEY
+      UsagePlanId: !Ref ClothingUsagePlan
+
+  # =====================================================
+  # 📦 RESOURCES
+  # =====================================================
+  ClothingResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref ClothingRestAPI
+      ParentId: !GetAtt ClothingRestAPI.RootResourceId
+      PathPart: clothing
+
+  ClothingIdResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref ClothingRestAPI
+      ParentId: !Ref ClothingResource
+      PathPart: "{id}"
+
+  # =====================================================
+  # 🔑 PERMISSIONS
+  # =====================================================
+  ListClothingPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref ListClothingLambda
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ClothingRestAPI}/*/*/*"
+
+  GetClothingPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref GetClothingLambda
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ClothingRestAPI}/*/*/*"
+
+  PostClothingPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref PostClothingLambda
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ClothingRestAPI}/*/*/*"
+
+  PutClothingPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref PutClothingLambda
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ClothingRestAPI}/*/*/*"
+
+  DeleteClothingPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref DeleteClothingLambda
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ClothingRestAPI}/*/*/*"
+
+  # =====================================================
+  # 🧩 METHODS (CRUD + CORS)
+  # =====================================================
+  OptionsClothingMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ClothingRestAPI
+      ResourceId: !Ref ClothingResource
+      HttpMethod: OPTIONS
+      AuthorizationType: NONE
+      ApiKeyRequired: false
+      Integration:
+        Type: MOCK
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,Accept,X-Requested-With,Authorization,x-api-key'"
+              method.response.header.Access-Control-Allow-Methods: "'GET,POST,PUT,DELETE,PATCH,OPTIONS'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+            ResponseTemplates:
+              application/json: ''
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+      MethodResponses:
+        - StatusCode: 200
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Origin: true
+
+  ListClothingMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ClothingRestAPI
+      ResourceId: !Ref ClothingResource
+      HttpMethod: GET
+      AuthorizationType: NONE
+      ApiKeyRequired: true
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ListClothingLambda.Arn}/invocations"
+
+  PostClothingMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ClothingRestAPI
+      ResourceId: !Ref ClothingResource
+      HttpMethod: POST
+      AuthorizationType: NONE
+      ApiKeyRequired: true
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${PostClothingLambda.Arn}/invocations"
+
+  OptionsClothingIdMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ClothingRestAPI
+      ResourceId: !Ref ClothingIdResource
+      HttpMethod: OPTIONS
+      AuthorizationType: NONE
+      ApiKeyRequired: false
+      Integration:
+        Type: MOCK
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,Accept,X-Requested-With,Authorization,x-api-key'"
+              method.response.header.Access-Control-Allow-Methods: "'GET,POST,PUT,DELETE,PATCH,OPTIONS'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+            ResponseTemplates:
+              application/json: ''
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+      MethodResponses:
+        - StatusCode: 200
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Origin: true
+
+  GetClothingMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ClothingRestAPI
+      ResourceId: !Ref ClothingIdResource
+      HttpMethod: GET
+      AuthorizationType: NONE
+      ApiKeyRequired: true
+      RequestParameters:
+        method.request.path.id: true
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GetClothingLambda.Arn}/invocations"
+
+  PutClothingMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ClothingRestAPI
+      ResourceId: !Ref ClothingIdResource
+      HttpMethod: PUT
+      AuthorizationType: NONE
+      ApiKeyRequired: true
+      RequestParameters:
+        method.request.path.id: true
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${PutClothingLambda.Arn}/invocations"
+
+  DeleteClothingMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref ClothingRestAPI
+      ResourceId: !Ref ClothingIdResource
+      HttpMethod: DELETE
+      AuthorizationType: NONE
+      ApiKeyRequired: true
+      RequestParameters:
+        method.request.path.id: true
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DeleteClothingLambda.Arn}/invocations"
+
+  # =====================================================
+  # 🚀 DEPLOYMENT
+  # =====================================================
+  ClothingAPIDeployment:
+    Type: AWS::ApiGateway::Deployment
+    DependsOn:
+      - OptionsClothingMethod
+      - OptionsClothingIdMethod
+      - ListClothingMethod
+      - PostClothingMethod
+      - GetClothingMethod
+      - PutClothingMethod
+      - DeleteClothingMethod
+    Properties:
+      RestApiId: !Ref ClothingRestAPI
+      StageName: prod
+
+  # =====================================================
+  # CORS for API Gateway default errors (4XX/5XX)
+  # Ensures browser gets CORS headers even on auth/validation errors
+  # =====================================================
+  ApiGatewayDefault4xx:
+    Type: AWS::ApiGateway::GatewayResponse
+    Properties:
+      RestApiId: !Ref ClothingRestAPI
+      ResponseType: DEFAULT_4XX
+      ResponseParameters:
+        gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
+        gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type,Accept,X-Requested-With,Authorization,x-api-key'"
+        gatewayresponse.header.Access-Control-Allow-Methods: "'GET,POST,PUT,DELETE,PATCH,OPTIONS'"
+  ApiGatewayDefault5xx:
+    Type: AWS::ApiGateway::GatewayResponse
+    Properties:
+      RestApiId: !Ref ClothingRestAPI
+      ResponseType: DEFAULT_5XX
+      ResponseParameters:
+        gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
+        gatewayresponse.header.Access-Control-Allow-Headers: "'Content-Type,Accept,X-Requested-With,Authorization,x-api-key'"
+        gatewayresponse.header.Access-Control-Allow-Methods: "'GET,POST,PUT,DELETE,PATCH,OPTIONS'"
+
+# =====================================================
+# API GATEWAY DOCUMENTATION PARTS (Clothing)
+# =====================================================
+  ClothingApiDocumentation:
+    Type: AWS::ApiGateway::DocumentationPart
+    Properties:
+      RestApiId: !Ref ClothingRestAPI
+      Location:
+        Type: API
+      Properties: |
+        {
+          "description": "API para gestión de prendas con autenticación por API Key. Permite operaciones CRUD sobre una base de datos DynamoDB.",
+          "info": {
+            "title": "Clothing API",
+            "version": "1.0.0",
+            "contact": { "name": "API Support" }
+          }
+        }
+
+  ClothingCollectionResourceDocumentation:
+    Type: AWS::ApiGateway::DocumentationPart
+    Properties:
+      RestApiId: !Ref ClothingRestAPI
+      Location:
+        Type: RESOURCE
+        Path: /clothing
+      Properties: |
+        { "description": "Recurso para gestionar la colección de prendas" }
+
+  GetClothingMethodDocumentation:
+    Type: AWS::ApiGateway::DocumentationPart
+    Properties:
+      RestApiId: !Ref ClothingRestAPI
+      Location:
+        Type: METHOD
+        Path: /clothing
+        Method: GET
+      Properties: |
+        {
+          "summary": "Obtener todas las prendas",
+          "description": "Retorna una lista de todas las prendas almacenadas",
+          "tags": ["Clothing"],
+          "responses": {
+            "200": { "description": "Lista de prendas obtenida exitosamente" },
+            "401": { "description": "No autorizado - API Key inválida o faltante" },
+            "500": { "description": "Error interno del servidor" }
+          }
+        }
+
+  PostClothingMethodDocumentation:
+    Type: AWS::ApiGateway::DocumentationPart
+    Properties:
+      RestApiId: !Ref ClothingRestAPI
+      Location:
+        Type: METHOD
+        Path: /clothing
+        Method: POST
+      Properties: |
+        {
+          "summary": "Crear una prenda",
+          "description": "Crea una nueva prenda con los datos proporcionados",
+          "tags": ["Clothing"],
+          "requestBody": {
+            "description": "Datos de la prenda a crear",
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["name", "brand", "size", "color", "price"],
+                  "properties": {
+                    "name": { "type": "string", "example": "Chaqueta" },
+                    "brand": { "type": "string", "example": "Zara" },
+                    "size": { "type": "string", "example": "M" },
+                    "color": { "type": "string", "example": "Negro" },
+                    "price": { "type": "number", "minimum": 0, "example": 79.99 },
+                    "wishlist": { "type": "boolean", "example": false },
+                    "notes": { "type": "string", "example": "Edición limitada" }
+                  }
+                }
+              }
+            }
+          },
+          "responses": {
+            "201": { "description": "Prenda creada exitosamente" },
+            "400": { "description": "Solicitud inválida - datos incorrectos" },
+            "401": { "description": "No autorizado - API Key inválida" }
+          }
+        }
+
+  ClothingItemResourceDocumentation:
+    Type: AWS::ApiGateway::DocumentationPart
+    Properties:
+      RestApiId: !Ref ClothingRestAPI
+      Location:
+        Type: RESOURCE
+        Path: /clothing/{id}
+      Properties: |
+        { "description": "Recurso para gestionar una prenda específica por su ID" }
+
+  GetClothingItemMethodDocumentation:
+    Type: AWS::ApiGateway::DocumentationPart
+    Properties:
+      RestApiId: !Ref ClothingRestAPI
+      Location:
+        Type: METHOD
+        Path: /clothing/{id}
+        Method: GET
+      Properties: |
+        {
+          "summary": "Obtener una prenda por ID",
+          "description": "Retorna los detalles de una prenda identificada por su ID",
+          "tags": ["Clothing"],
+          "parameters": [
+            { "name": "id", "in": "path", "required": true, "schema": { "type": "string" }, "description": "ID único de la prenda" }
+          ],
+          "responses": {
+            "200": { "description": "Prenda encontrada" },
+            "404": { "description": "Prenda no encontrada" },
+            "401": { "description": "No autorizado" }
+          }
+        }
+
+  PutClothingItemMethodDocumentation:
+    Type: AWS::ApiGateway::DocumentationPart
+    Properties:
+      RestApiId: !Ref ClothingRestAPI
+      Location:
+        Type: METHOD
+        Path: /clothing/{id}
+        Method: PUT
+      Properties: |
+        {
+          "summary": "Actualizar una prenda",
+          "description": "Actualiza los datos de una prenda existente",
+          "tags": ["Clothing"],
+          "parameters": [
+            { "name": "id", "in": "path", "required": true, "schema": { "type": "string" }, "description": "ID de la prenda a actualizar" }
+          ],
+          "responses": {
+            "200": { "description": "Prenda actualizada exitosamente" },
+            "404": { "description": "Prenda no encontrada" },
+            "400": { "description": "Datos inválidos" }
+          }
+        }
+
+  DeleteClothingItemMethodDocumentation:
+    Type: AWS::ApiGateway::DocumentationPart
+    Properties:
+      RestApiId: !Ref ClothingRestAPI
+      Location:
+        Type: METHOD
+        Path: /clothing/{id}
+        Method: DELETE
+      Properties: |
+        {
+          "summary": "Eliminar una prenda",
+          "description": "Elimina una prenda de la base de datos",
+          "tags": ["Clothing"],
+          "parameters": [
+            { "name": "id", "in": "path", "required": true, "schema": { "type": "string" }, "description": "ID de la prenda a eliminar" }
+          ],
+          "responses": {
+            "200": { "description": "Prenda eliminada exitosamente" },
+            "404": { "description": "Prenda no encontrada" }
+          }
+        }
+
+# =====================================================
+# 📤 OUTPUTS
+# =====================================================
+Outputs:
+  GetClothingLambdaArn:
+    Description: ARN of the Get Lambda
+    Value: !GetAtt GetClothingLambda.Arn
+  ListClothingLambdaArn:
+    Description: ARN of the List Lambda
+    Value: !GetAtt ListClothingLambda.Arn
+  PostClothingLambdaArn:
+    Description: ARN of the Create Lambda
+    Value: !GetAtt PostClothingLambda.Arn
+  DeleteClothingLambdaArn:
+    Description: ARN of the Delete Lambda
+    Value: !GetAtt DeleteClothingLambda.Arn
+  PutClothingLambdaArn:
+    Description: ARN of the Update Lambda
+    Value: !GetAtt PutClothingLambda.Arn
+  ApiGatewayUrl:
+    Description: Base URL of the Clothing API Gateway
+    Value: !Sub "https://${ClothingRestAPI}.execute-api.${AWS::Region}.amazonaws.com/prod"
+  ApiKeyId:
+    Description: ID of the Clothing API Key
+    Value: !Ref ClothingApiKey
+  ClothingEndpoint:
+    Description: Endpoint for /clothing
+    Value: !Sub "https://${ClothingRestAPI}.execute-api.${AWS::Region}.amazonaws.com/prod/clothing"

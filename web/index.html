@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mi Wishlist de Ropa</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app-container">
+
+    <!-- Header -->
+    <header class="header">
+      <h1>Mi Wishlist de Ropa</h1>
+      <p>Un lugar simple para guardar mis prendas favoritas</p>
+    </header>
+
+    <!-- Config Panel -->
+    <section class="config-panel" id="configPanel">
+      <h2>Configuración de API</h2>
+      <div class="form-group">
+        <label for="apiUrl">URL de la API</label>
+        <input type="text" id="apiUrl" placeholder="https://api.miapp.dev">
+      </div>
+      <div class="form-group">
+        <label for="apiKey">API Key</label>
+        <div class="input-group">
+          <input type="password" id="apiKey" placeholder="Tu clave de API">
+          <button type="button" id="toggleApiKey" class="btn-icon">👁️</button>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button id="saveConfig" class="btn primary">Guardar</button>
+        <button id="testConnection" class="btn outline">Probar conexión</button>
+      </div>
+      <div id="connectionStatus" class="status-message"></div>
+    </section>
+
+    <!-- Floating Config Button -->
+    <button id="toggleConfig" class="floating-btn">⚙️</button>
+
+    <!-- Main -->
+    <main class="main-content">
+      <div class="toolbar">
+        <button id="refreshClothing" class="btn outline">Actualizar</button>
+        <button id="addClothingBtn" class="btn primary">Añadir prenda</button>
+      </div>
+
+      <section class="stats">
+        <div class="stat-card">
+          <h3 id="totalClothing">0</h3>
+          <p>Prendas guardadas</p>
+        </div>
+      </section>
+
+      <section class="clothing-list" id="clothingContainer">
+        <div class="loading">Cargando prendas...</div>
+      </section>
+    </main>
+
+    <!-- Modal -->
+    <div id="clothingModal" class="modal">
+      <div class="modal-content">
+        <span class="close">&times;</span>
+        <h2 id="modalTitle">Añadir prenda</h2>
+        <form id="clothingForm">
+          <input type="hidden" id="clothingId">
+
+          <div class="form-group">
+            <label for="name">Nombre *</label>
+            <input type="text" id="name" required placeholder="Camisa blanca">
+          </div>
+
+          <div class="form-group">
+            <label for="brand">Marca</label>
+            <input type="text" id="brand" placeholder="Uniqlo, Zara...">
+          </div>
+
+          <div class="form-group">
+            <label for="size">Talla</label>
+            <input type="text" id="size" placeholder="M, L, 42...">
+          </div>
+
+          <div class="form-group">
+            <label for="color">Color</label>
+            <input type="text" id="color" placeholder="Negro, gris...">
+          </div>
+
+          <div class="form-group">
+            <label for="price">Precio (€)</label>
+            <input type="number" id="price" step="0.01" min="0" placeholder="59.99">
+          </div>
+
+          <div class="form-group checkbox">
+            <input type="checkbox" id="wishlist">
+            <label for="wishlist">Añadir a mi lista ❤️</label>
+          </div>
+
+          <div class="form-group">
+            <label for="notes">Notas</label>
+            <textarea id="notes" placeholder="Por ejemplo: para el próximo invierno..."></textarea>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" class="btn primary">Guardar</button>
+            <button type="button" id="cancelBtn" class="btn outline">Cancelar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+  </div>
+
+  <div id="toast" class="toast"></div>
+  <script src="app.js"></script>
+</body>
+</html>

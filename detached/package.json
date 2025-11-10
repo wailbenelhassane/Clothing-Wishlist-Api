@@ -1,0 +1,10 @@
+{
+  "name": "clothing-wishlist",
+  "version": "1.0.0",
+  "main": "index.js",
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.375.0",
+    "@aws-sdk/lib-dynamodb": "^3.375.0",
+    "uuid": "^9.0.0"
+  }
+}
